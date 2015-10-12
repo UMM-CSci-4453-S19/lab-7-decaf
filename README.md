@@ -121,7 +121,7 @@ function allZero(object){
 
 ##Approach 2: Using Promises
 
-The more I investigate this approach, the more I think it is **the right thing to do**.  So, at the risk of really stretching this material out... let's learn a little bit about honesty and the importance of making promises.  I am basing much of this lecture of Daniel Parker's work in "JavaScript with Promises".
+The more I investigate this approach, the more I think it is **the right thing to do**.  So, at the risk of really stretching this material out... let's learn a little bit about honesty and the importance of making promises.  I am basing much of this lecture of Daniel Parker's work in "JavaScript with Promises".  Before getting into the nitty-gritty here's an overview of the JavaScript event loop, as explained by [Philip Robers](https://www.youtube.com/watch?v=8aGhZQkoFbQ) (you will need about half an hour)
 
 ###What is a promise
 
@@ -133,7 +133,47 @@ A promise is an object meant to act as a placeholder for some value.  In situati
 
 Before doing anything, install the node package using `npm install bluebird` in your projects root directory.
 
----
+A promise can be in one of three states:
+
+1. Pending
+2. Fulfilled
+3. Rejected
+
+Promises are chained together using methods such as `.then()`.  This allows the programmer to introduce causal steps.  This will make more sense after the examples below, but try this short one:
+
+```{js}
+Promise=require('bluebird');
+
+var promise= new Promise(function(resolve,reject){
+  console.log('Inside resolver function');
+  resolve();
+});
+
+promise.then(function(){
+  console.log('Inside onFulfilled handler');
+});
+
+console.log('End of Script');
+```
+
+The output of this little program should be as follows:
+```
+Inside resolver function
+End of Script
+Inside onFulfilled handler
+```
+
+So what is happening?  The variable `promise` is created using `new` and a constructor method.  This constuctor method runs immediately (it is a **synchronous** call). And we get our first line:  `Inside resolver function`.
+
+However, this initialization function has another function called `resolve()` which is is secrely asynchronous.  This method is designed to check the chain of promises attatched to the very objec that we are creating.  Because `resolve()` is asynchronous it immediately returns (and it will return a promise object).  The function `resolve()` is now queued up, and will be run AFTER the main thread of execution is completed (because of the "run until completion motto").   Eventually `resolve()` will attempt to resolve anything *hanging off* that original promise.  At this point... there is NOTHING chained to the initial promise... 
+
+So we get to the next line.  This one assigns a handler to the initial promise using `.then()`.  This is our `onFulfilled handler`.  So... we have assigned a callback (which definitely has not yet been run), because the original `resolve()` function is waiting for the current thread of execution to finish so it can start.
+
+Now we, finally, get to `console.log('End of Script')`.  And it prints.
+
+Now `resolve()` can run.  Because it had to wait until the end of our current thread of execution before being run, we had time to add things to the original promise.  The method `.resolve()` executes the `onFulfilled` handler, and our third line finally prints.
+
+###Back to Databases
 
 In preparation for understanding how a promise works, let's review our original `showDatabases.js` program:
 
@@ -267,6 +307,18 @@ var query=function(command){
 ```
 
 The `query()` method is using `using` (which is discussed in that last link I provided).  This method will ensure that the anonymous function passed as the second argument can use the same name space as the promise returned by `getConnection()`.  It also ensures that the `.disposer()` method for `.getConnection()` isn't called until after `.queryAsync()` (which is a promise) is resolved.  
+
+We are finally in a position to understand the *meat of the function*:
+
+```{js}
+var result=query(mysql.format(sql)) //result is a promise
+result.then(function(dbfs,err){console.log(dbfs)}).then(function(){pool.end()});
+```
+
+So, the `query()` function returns a promise that is not completely resolved until the query it contains is executed.
+We use `.then()` to process the results of those queries, and then another `.then()` chained off the back, the closes down the pool of connections.
+
+###Now a bit more about promises in general.
 
 Start by reading this:  [Alex Perry's blog entry on promises in node](http://alexperry.io/node/2015/03/25/promises-in-node.html).
 
