@@ -2,7 +2,7 @@
 # Asynchronous node
 There are at least 3 ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  
 ##Approach One:  Coordinate using a data structure
-Consider the fragment below which should look very similar to `show-databases.js` from the lat lab:
+Consider the fragment below which should look very similar to `show-databases.js` from the last lab:
 ```{js}
 ... stuff left out ...
 var connection = mysql.createConnection(credentials);
@@ -326,9 +326,8 @@ Here is a short writeup on using promises with node and mySQL (which will work j
 
 <https://medium.com/@alpercitak/node-js-with-mysql-a43c49bbafd3>
 
-For this solution we are going to mix things up a bit and create a `connectionPool` so that each interaction has its own connection.
+For this solution we are also going to create a `connectionPool` so that each interaction has its own connection, and We are also going to take advantage of **[prepared statements ](http://www.w3resource.com/node.js/nodejs-mysql.php#prepared-statements)** to make our code even more compact.
 
-We are also going to take advantage of **[prepared statements ](http://www.w3resource.com/node.js/nodejs-mysql.php#prepared-statements)** to make our code even more compact.
 
 **CURRENTLY UPDATING**
 
