@@ -121,6 +121,153 @@ function allZero(object){
 
 ##Approach 2: Using Promises
 
+The more I investigate this approach, the more I think it is **the right thing to do**.  So, at the risk of really stretching this material out... let's learn a little bit about honesty and the importance of making promises.  I am basing much of this lecture of Daniel Parker's work in "JavaScript with Promises".
+
+###What is a promise
+
+A promise is an object meant to act as a placeholder for some value.  In situations involving asynchronous callback functions, a promise-object allows the asynchronous call to return immediately and provides the programmer (you) the opportunity to register *more* callbacks that will be run when the underlying function ends successfully or generates an error.  HTML5 includes a specification for [EcmaScript](https://en.wikipedia.org/wiki/ECMAScript), which is javaScript (mostly) has native support for promises.  However, we are going to use the `bluebird` library because it is
+
+* being actively developed
+* works on older systems
+* has several nice online examples of its use.
+
+Before doing anything, install the node package using `npm install bluebird` in your projects root directory.
+
+---
+
+In preparation for understanding how a promise works, let's review our original `showDatabases.js` program:
+
+```{js}
+var credentials = require('./credentials.json');
+
+var mysql=require("mysql");
+
+credentials.host="ids"
+var connection = mysql.createConnection(credentials);
+
+connection.connect(function(err){
+  if(err){
+    console.log("Problems with MySQL: "+err);
+  } else {
+    console.log("Connected to Database.");
+  }
+});
+
+connection.query('SHOW DATABASES',function(err,rows,fields){
+  if(err){
+    console.log('Error looking up databases');
+  } else {
+    console.log('Returned values were ',rows);
+}
+});
+connection.end()
+console.log("All done now.");
+```
+
+We are going to start by modifying this example to make use `connection.pool()`s.  The reason we are doing this is three-fold:
+
+1. Most examples use this (and we would like to steal other people's good ideas when possible).
+2. This approach will scale better to larger projects that might require multiple concurrent connections.
+3. Creating a new connection helps insulate the user from fragile connections (connections can break)
+
+```{js}
+var credentials = require('./credentials.json');
+var mysql=require("mysql");
+credentials.host="ids"
+var pool=mysql.createPool(credentials)
+pool.getConnection(function(err,conn){
+  if(!err){
+      conn.query('SHOW DATABASES',function(err,rows,fields){
+          if(err){
+            console.log('Error looking up databases');
+          } else {
+            console.log('Returned values were ',rows);
+          }
+          conn.release()
+          pool.end()
+        });
+  } else{
+      console.log('Error making connection')
+  }
+});
+console.log("All done now.");
+```
+
+Notice that we are using `.release()` and `pool.end()`.
+
+In our example, this is major over-kill and something of a waste of time since it makes the code harder to read.  However... if we removed the `pool.end()`.  We could wrap most of our active-code in a function and have a comletely self-contained `sql` function.  We would **still** have to deal with the difficulties of asynchronous callbacks... but things would run very quickly indeed.
+
+**Bringing in Promises**
+
+Now we're going to add in promises.  There are some new ideas floating around in this next example, so be sure to type up the next example before continuing:
+
+```{js}
+var credentials = require('./credentials.json');
+
+var mysql=require("mysql");
+var Promise = require('bluebird');
+var using = Promise.using;
+Promise.promisifyAll(require("mysql/lib/Connection").prototype);
+Promise.promisifyAll(require("mysql/lib/Pool").prototype);
+
+credentials.host="ids"
+var pool=mysql.createPool(credentials); //Setup the pool using our credentials.
+
+var getConnection=function(){
+    return pool.getConnectionAsync().disposer(
+        function(connection){return connection.release();}
+          );
+};
+
+var query=function(command){
+    return using(getConnection(),function(connection){
+       return connection.queryAsync(command);
+    });
+};
+
+
+sql="SHOW DATABASES"
+var result=query(mysql.format(sql)) //result is a promise
+result.then(function(dbfs,err){console.log(dbfs)}).then(function(){pool.end()});
+```
+
+The first *weird* thing in the code up above is (somewhat abridged) some of the *Promise* parts:
+
+```{js}
+var Promise = require('bluebird');
+Promise.promisifyAll(require("mysql/lib/Connection").prototype);
+Promise.promisifyAll(require("mysql/lib/Pool").prototype);
+```
+
+The first line is clear:  We are using the promise library known as `bluebird`. The next two lines are a bit mysterious.  We will examine them in more detail later.  The important thing is that these lines *wrap* the original methods from mysql in functions that return Promises.  The function `promisify` converts callback-style APIs to use promises.  You can read up on it [at the bluebird documention](https://github.com/petkaantonov/bluebird/blob/master/API.md#promisification).  The key thing is that a new version of the function is made that now ends with the word `Async`.  Hence the `mysql` method `query` is now called `queryAsync` and returns a promise instead of its results.
+
+**Connection Pools and Promises**
+
+Things are a bit nicer now:
+```{js}
+var pool=mysql.createPool(credentials); //Setup the pool using our credentials.
+
+var getConnection=function(){
+    return pool.getConnectionAsync().disposer(
+        function(connection){return connection.release();}
+          );
+};
+```
+
+The `.disposer()` method is part of `bluebird`.  It is guaranteed to run after the promise returned by `.getConnectionAsync()` is resolved.... so what we're doing is over-writing the `getConnection` function with one of our own.  The [blue bird documentation on Resource Management](https://github.com/petkaantonov/bluebird/blob/master/API.md#resource-management) is informative  Be sure to read the entire resource Management section before continuing.  
+
+Now look at where `getConnection()` is being used:
+
+```{js}
+var query=function(command){
+    return using(getConnection(),function(connection){
+       return connection.queryAsync(command);
+    });
+};
+```
+
+The `query()` method is using `using` (which is discussed in that last link I provided).  This method will ensure that the anonymous function passed as the second argument can use the same name space as the promise returned by `getConnection()`.  It also ensures that the `.disposer()` method for `.getConnection()` isn't called until after `.queryAsync()` (which is a promise) is resolved.  
+
 Start by reading this:  [Alex Perry's blog entry on promises in node](http://alexperry.io/node/2015/03/25/promises-in-node.html).
 
 Here is a short writeup on using promises with node and mySQL (which will work just fine with mariaDB)
