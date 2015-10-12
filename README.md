@@ -1,5 +1,126 @@
 # Lab 7
-This it the **prelminary** version.  It will be fleshed out more as the next week and a half progresses.
+# Asynchronous node
+There are at least 3 ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  
+##Approach One:  Coordinate using a data structure
+Consider the fragment below which should look very similar to `show-databases.js` from the lat lab:
+```{js}
+... stuff left out ...
+var connection = mysql.createConnection(credentials);
+var data={};
+var processed={}
+
+sql = "SHOW DATABASES";
+connection.query(sql,function(err,rows,fields){ //connection.connect() is run automatically for a query
+  if(err){
+    console.log('Error looking up databases');
+    connection.end();
+  } else {
+     processDBFs(rows); //Gets called once... so it is safe!
+}
+});
+```
+The two big changes are the global variables `data` and `processed` (both hashes).
+
+We set the connection up, same as before, but now we call another function to process each row.
+
+Let's look at some of that:
+```{js}
+function processDBFs(dbfs){ // Asyncronous row handler
+     for(var index in dbfs){
+       var dbf = dbfs[index].Database;
+       var sql = 'SHOW TABLES IN '+dbf;
+        data[dbf] = Number.POSITIVE_INFINITY; //Exists, but not set.
+        connection.query(sql, (function(dbf){
+          return function(err,tables,fields){
+            if(err){
+              console.log('Error finding tables in dbf '+ dbf);
+              connection.end();
+            } else {
+              processTables(tables,dbf);
+            }
+           };
+        })(dbf));
+    } // do NOT put a connection.end() here.  It will kill all queued queries.
+}
+```
+This solution uses the hash `data`, creating a key for every database and storing a value of `Number.POSITIVE_INFINITY`. It then sets up the callback function that should be run for each `SHOW TABLES IN ...` query.  Look closely at what is being done:
+
+```{js}
+        connection.query(sql, (function(dbf){
+          return function(err,tables,fields){
+            #function body
+        })(dbf));
+
+```
+
+The callback function is **created** inside `processDBFs`.  This chunk of code:
+```{js}
+(function(dbf){
+          return function(err,tables,fields){
+            #function body
+        })(dbf)
+```
+Executes an anonymous function that takes `dbf` as an argument.  The interior function:
+```{js}
+function(err,tables,fields){
+    #function body
+}
+```
+is defined inside the anonymous function and thus **shares its namespace**.  Most importantly... it has a local copy of the value of `dbf`.
+
+**That** function (also anonymous) is the callback given to `connection.query`.  Because of the properties of closures-- the function body will use the proper version of `dbf`.
+
+In a similar fashion each table can be processed by a function.  Note the similar **callback construction** approach, and how all the local values are handed off to `processDescription(desc,table,dbf)` for final printing:
+
+```{js}
+function processTables(tables,dbf){ // Asyncronous row handler
+    data[dbf] = tables.length; // Now it is set.
+    processed[dbf] = 0;        // And has not yet been used as a label.
+    for(var index in tables){
+      var tableObj = tables[index];
+      for(key in tableObj){
+        var table = tableObj[key];
+        table = dbf+"."+table;
+        var sql = 'DESCRIBE '+table;
+        connection.query(sql, (function(table,dbf){
+          return function(err,desc,fields){
+            if(err){
+              console.log('Error describing table '+ table);
+            } else {
+              processDescription(desc,table,dbf);
+            }
+          };
+          })(table,dbf));
+      }
+    }
+}
+```
+
+This is all fine and dandy... but how do we know when to close the connection?
+
+```{js}
+function processDescription(desc,table,dbf){
+  data[dbf]--; //Processed one table
+  if(processed[dbf]==0){
+    processed[dbf] = 1
+    console.log('---|'+dbf+'>');
+  }
+  console.log('.....|'+table+'>');
+  console.log(desc);
+  if(allZero(data)){connection.end()}
+}
+
+function allZero(object){
+  allzero = true;
+  for(obj in object){
+    if(object[obj]!=0){allzero = false}
+  }
+  return(allzero);
+}
+```
+
+##Approach 2: Use of async.
+
 
 # angular
 
