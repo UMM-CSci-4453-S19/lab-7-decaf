@@ -119,7 +119,23 @@ function allZero(object){
 }
 ```
 
-##Approach 2: Use of async.
+##Approach 2: Using Promises
+
+Start by reading this:  [Alex Perry's blog entry on promises in node](http://alexperry.io/node/2015/03/25/promises-in-node.html).
+
+Here is a short writeup on using promises with node and mySQL (which will work just fine with mariaDB)
+
+<https://medium.com/@alpercitak/node-js-with-mysql-a43c49bbafd3>
+
+For this solution we are going to mix things up a bit and create a `connectionPool` so that each interaction has its own connection.
+
+We are also going to take advantage of **[prepared statements ](http://www.w3resource.com/node.js/nodejs-mysql.php#prepared-statements)** to make our code even more compact.
+
+**CURRENTLY UPDATING**
+
+<https://lestersy.io/2015/2/22/Callback-Hell,-Async,-and-Promises>
+
+##Approach 3: Use of async
 
 
 # angular
