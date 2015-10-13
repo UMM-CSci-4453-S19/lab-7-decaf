@@ -19,11 +19,14 @@ connection.query(sql,function(err,rows,fields){ //connection.connect() is run au
 }
 });
 ```
-The two big changes are the global variables `data` and `processed` (both hashes).
+We will use the global variables `data` and `processed` to coordinate our asynchronous database queries.  Both of these variables are hash tables.
 
-We set the connection up, same as before, but now we call another function to process each row.
+We begin the program similarly to what we did in the lat lab by seting up the connection.  The `connection.query()` method sets up the SQL query and passes the anonymous callback function that will either deal with the results of the query (if successful), or deal with the consequences of a failure (if there is an error).  Notice that the anonymous function has three parameters `err`, `rows`, and `fields` which will be filled with values resulting from the interaction with MariaDB.
 
-Let's look at some of that:
+Our logic is particularly simple-- if there is an error, report it and close the connection.  Otherwise our query has returned an array of objects which we will deal with in the function `processDBFs` (discussed below).
+
+Let's look at how `processDBFs` works: 
+
 ```{js}
 function processDBFs(dbfs){ // Asyncronous row handler
      for(var index in dbfs){
