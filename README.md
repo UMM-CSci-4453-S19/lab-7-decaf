@@ -137,7 +137,7 @@ The more I investigate this approach, the more I think it is **the right thing t
 
 ###What is a promise
 
-A promise is an object meant to act as a placeholder for some value.  In situations involving asynchronous callback functions, a promise-object allows the asynchronous call to return immediately and provides the programmer (you) the opportunity to register *more* callbacks that will be run when the underlying function ends successfully or generates an error.  HTML5 includes a specification for [EcmaScript](https://en.wikipedia.org/wiki/ECMAScript), which is javaScript (mostly) has native support for promises.  However, we are going to use the `bluebird` library because it is
+A promise is an object meant to act as a placeholder for some value.  In situations involving asynchronous callback functions, a promise-object allows the asynchronous call to return immediately and provides the programmer (you) the opportunity to register *more* callbacks that will be run when the underlying function ends successfully or generates an error.  HTML5 includes a specification for [EcmaScript](https://en.wikipedia.org/wiki/ECMAScript), which is javaScript (mostly) and has native support for promises.  However, we are going to use the `bluebird` library because it is
 
 * being actively developed
 * works on older systems
@@ -151,7 +151,11 @@ A promise can be in one of three states:
 2. Fulfilled
 3. Rejected
 
-Promises are chained together using methods such as `.then()`.  This allows the programmer to introduce causal steps.  This will make more sense after the examples below, but try this short one:
+Generally, we are not going to be changing the state of a Promise ourselves, but it helps to know what is happening behind the scenes.  A Promise can change from *Pending* to *Fulfilled* (if successful) or *Rejected* (if there was an error).  A Promise in either of these two states is called *submitted*.  Once submitted a Promise can not change state.
+
+Remember that a Promise is a placeholder for a value-- a value that is the end result of some asynchronous procedure.  We can assign handlers to a Promise to deal with the results of that procedure using the `.then()` method.  We can also use the `.catch()` method to deal with errors.  (If you're being picky, we can use `.then()` to deal with both success and failure).
+
+We can also **chain** promises together using `.then()`.  This allows the programmer to introduce causal steps and deal with dependency issues.  This will make more sense after the examples below.  Try this short one first:
 
 ```{js}
 Promise=require('bluebird');
