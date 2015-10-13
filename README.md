@@ -179,13 +179,37 @@ End of Script
 Inside onFulfilled handler
 ```
 
-So what is happening?  The variable `promise` is created using `new` and a constructor method.  This constuctor method runs immediately (it is a **synchronous** call). And we get our first line:  `Inside resolver function`.
+So what is happening?  Bluebird is one of several promise APIs.  Somewhat similar to an `import` command in Java, we load it using `require`:  
 
-However, this initialization function has another function called `resolve()` which is is secrely asynchronous.  This method is designed to check the chain of promises attatched to the very objec that we are creating.  Because `resolve()` is asynchronous it immediately returns (and it will return a promise object).  The function `resolve()` is now queued up, and will be run AFTER the main thread of execution is completed (because of the "run until completion motto").   Eventually `resolve()` will attempt to resolve anything *hanging off* that original promise.  At this point... there is NOTHING chained to the initial promise... 
+```{js}
+Promise=require('bluebird');
+```
 
-So we get to the next line.  This one assigns a handler to the initial promise using `.then()`.  This is our `onFulfilled handler`.  So... we have assigned a callback (which definitely has not yet been run), because the original `resolve()` function is waiting for the current thread of execution to finish so it can start.
+The variable `Promise` exposes all the functionality of the bluebird API (we could have called it whatever we wanted).  
+The variable `promise` (notice the lower case p) is created using `new` and a constructor called `Promise()`.  This constructor expect a function that takes two arguments-- `resolve` and `reject`-- both functions in their own right (it's getting kind of meta isn't it?).  We pass the constructor just such an anonymous function:
 
-Now we, finally, get to `console.log('End of Script')`.  And it prints.
+```{js}
+function(resolve,reject){
+  console.log('Inside resolver function');
+  resolve();
+}
+```
+
+This function runs immediately (it is a **synchronous** call). And we get our first output line:  `Inside resolver function`.  The two functoral arguments: `resolve` and `reject` are provided by bluebird.  Both are run asynchronously and set up callback functions that will be fired later.  That's what makes this whole thing work.  The `resolve()` method is designed to recursively work back along the chain of handlers (if any) starting at that current Promise.  
+
+Because `resolve()` is asynchronous it immediately returns (and it will return a promise object).  The function `resolve()` is now queued up, and will be run AFTER the main thread of execution is completed (because of the "run until completion motto" enjoyed by javaScript and node.js).   Eventually `resolve()` will attempt to resolve anything *hanging off* that original promise.  At this point however, no handlers have been attached to the promise, and there are no additional promises attached to it.  This is the beauty of making `resolve()` asynchronous-- the rest of the program now has time to assign handlers.
+
+So we get to the next chunk in the code:
+```{js}
+promise.then(function(){
+  console.log('Inside onFulfilled handler');
+});
+```
+This one assigns a handler to the initial promise using `.then()`.  This is our `onFulfilled handler`.  So... we have assigned a callback (which definitely has not yet been run) which will trigger after our initial Promise is fulfilled.
+
+Because the original `resolve()` function is waiting for the current thread of execution to finish it does not get to run yet... it is still waiting in the stack.
+
+Finally we reach `console.log('End of Script')`, and we print out **second** line of output.
 
 Now `resolve()` can run.  Because it had to wait until the end of our current thread of execution before being run, we had time to add things to the original promise.  The method `.resolve()` executes the `onFulfilled` handler, and our third line finally prints.
 
