@@ -213,9 +213,24 @@ Finally we reach `console.log('End of Script')`, and we print out **second** lin
 
 Now `resolve()` can run.  Because it had to wait until the end of our current thread of execution before being run, we had time to add things to the original promise.  The method `.resolve()` executes the `onFulfilled` handler, and our third line finally prints.
 
+In general we would set up our initial promise like this:
+
+```{js}
+var promise = new Promise(function(resolve, reject) {
+  // do a thing, possibly async, then…
+
+  if (/* everything turned out fine */) {
+    resolve("Stuff worked!");
+  }
+  else {
+    reject(Error("It broke"));
+  }
+});
+```
+
 ###Back to Databases
 
-In preparation for understanding how a promise works, let's review our original `showDatabases.js` program:
+Let's review our original `showDatabases.js` program:
 
 ```{js}
 var credentials = require('./credentials.json');
@@ -356,7 +371,7 @@ result.then(function(dbfs,err){console.log(dbfs)}).then(function(){pool.end()});
 ```
 
 So, the `query()` function returns a promise that is not completely resolved until the query it contains is executed.
-We use `.then()` to process the results of those queries, and then another `.then()` chained off the back, the closes down the pool of connections.
+We use `.then()` to process the results of those queries, and then another `.then()` chained off the back, that closes down the pool of connections.
 
 ###Now a bit more about promises in general.
 
