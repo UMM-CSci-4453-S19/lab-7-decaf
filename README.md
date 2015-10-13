@@ -101,8 +101,9 @@ function processTables(tables,dbf){ // Asyncronous row handler
     }
 }
 ```
+Here we finally set the `dbf` entry in `data` to be the number of tables in the database.  And set the `dbf` entry in the global hash `processed` to reflect the fact that we have not yet printed out the DBF line in our desired output.
 
-This is all fine and dandy... but how do we know when to close the connection?
+This is all fine and dandy... but we still need to print out actual results and close the connection when we are done.  This is handled by `processDescription`:
 
 ```{js}
 function processDescription(desc,table,dbf){
@@ -115,7 +116,12 @@ function processDescription(desc,table,dbf){
   console.log(desc);
   if(allZero(data)){connection.end()}
 }
+```
+This function does all the printing.  It starts by decreases the table count in `dbf` by 1.  Then it checks to see if the database output line has been produced (that's what we use `processed` for).  If not, then the line is printed, and the fact recorded so that the line is not printed twice.
 
+Regardless it prints the description of a table.  The only thing left is to shut down the connection when every table has had its description printed.  The function `allZero` returns `true` if every value in `data` is 0, otherwise it returns `false`:
+
+```{js}
 function allZero(object){
   allzero = true;
   for(obj in object){
