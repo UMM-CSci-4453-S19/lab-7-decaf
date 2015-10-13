@@ -46,7 +46,9 @@ function processDBFs(dbfs){ // Asyncronous row handler
     } // do NOT put a connection.end() here.  It will kill all queued queries.
 }
 ```
-This solution uses the hash `data`, creating a key for every database and storing a value of `Number.POSITIVE_INFINITY`. It then sets up the callback function that should be run for each `SHOW TABLES IN ...` query.  Look closely at what is being done:
+The variable `dbfs` is an array of objects containing database names.  The outer `for` loop steps through each in turn.  We use the name of the dbf as a key in the global hash `data`.  Eventually `data` will hold a count of the number of tables in that database, but we don't know how many there are yet, so we store a value of `Number.POSITIVE_INFINITY`.   This reserves space in the data-structure.  IF the rest of the program works as expected, the value will change to an actual integer, but if not, then we can detect that there was a problem.
+
+For each database we want to execute a query of the form `SHOW TABLES IN DBF`.  Setting up this query should look similar to what we did when we were running SHOW DATABASES-- we create a callback function to be executed when the quey is complted.  But there is one very, important difference that makes everything work.  Look closely at what is being done:
 
 ```{js}
         connection.query(sql, (function(dbf){
@@ -63,17 +65,18 @@ The callback function is **created** inside `processDBFs`.  This chunk of code:
             #function body
         })(dbf)
 ```
-Executes an anonymous function that takes `dbf` as an argument.  The interior function:
+Executes an anonymous function that takes `dbf` as an argument and returns a function, namely the interior function:
 ```{js}
 function(err,tables,fields){
     #function body
 }
 ```
-is defined inside the anonymous function and thus **shares its namespace**.  Most importantly... it has a local copy of the value of `dbf`.
 
-**That** function (also anonymous) is the callback given to `connection.query`.  Because of the properties of closures-- the function body will use the proper version of `dbf`.
+This is important.  The innermost function is defined *inside* the anonymous function and thus **shares its namespace**.  Most importantly... it has a local copy of the value of `dbf`.
 
-In a similar fashion each table can be processed by a function.  Note the similar **callback construction** approach, and how all the local values are handed off to `processDescription(desc,table,dbf)` for final printing:
+**That** function (also anonymous) is the callback given to `connection.query`.  Because of the properties of closures-- the function body will use the proper version of `dbf`.  Without using this technique, your program would find the current value of `dbf` as it exists in `processDBFs`.
+
+In a similar fashion each table can now be processed by a function.  Note the similar **callback construction** approach, and how all the local values are handed off to `processDescription(desc,table,dbf)` for final printing:
 
 ```{js}
 function processTables(tables,dbf){ // Asyncronous row handler
