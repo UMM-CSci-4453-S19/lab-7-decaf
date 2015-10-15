@@ -228,6 +228,7 @@ var promise = new Promise(function(resolve, reject) {
 });
 ```
 
+The `.then()` method expects either a Promise object or a callback function (more on that down below) as an argument.
 ###Back to Databases
 
 Let's review our original `showDatabases.js` program:
@@ -372,6 +373,80 @@ result.then(function(dbfs,err){console.log(dbfs)}).then(function(){pool.end()});
 
 So, the `query()` function returns a promise that is not completely resolved until the query it contains is executed.
 We use `.then()` to process the results of those queries, and then another `.then()` chained off the back, that closes down the pool of connections.
+
+**Making things a bit cleaner**
+
+I would like to clean things up a bit to show how much more readable Promises can make our code.
+
+First, create a file called `dbf-setup.js` and make certain it is in the same directory as your `credentials.json` file.  Here is what `dbf-setup.js` should contain:
+
+```{js}
+var credentials = require('./credentials.json');
+
+var mysql=require("mysql");
+var Promise = require('bluebird');
+var using = Promise.using;
+Promise.promisifyAll(require("mysql/lib/Connection").prototype);
+Promise.promisifyAll(require("mysql/lib/Pool").prototype);
+
+credentials.host="ids"
+var connection = mysql.createConnection(credentials);
+
+var pool=mysql.createPool(credentials); //Setup the pool using our credentials.
+
+var getConnection=function(){
+  return pool.getConnectionAsync().disposer(
+    function(connection){return connection.release();}
+  );
+};
+var query=function(command){ //SQL comes in and a promise comes out.
+  return using(getConnection(),function(connection){
+    return connection.queryAsync(command);
+  });
+};
+
+var endPool=function(){
+   pool.end(function(err){});
+}
+
+exports.query = query;
+exports.releaseDBF=endPool;
+```
+
+We are defining a module.  Node.js allows you to use the `require` function to import information from another file, and the `exports.`*function_name*=*function*The only new material is at the end.  It is how we export functions.  
+
+With that functionality wrapped up in a module the remaining code necessary to implement "SHOW DATABASES" is fairly short.  I have added TWO complications in preparation for the final version of the program however, so read carefully:
+
+```{js}
+mysql=require('mysql');
+dbf=require('./dbf-setup.js');
+
+var getDatabases=function(){//Returns a promise that can take a handler ready to process the results
+  var sql = "SHOW DATABASES";
+  return dbf.query(mysql.format(sql)); //Return a promise
+}
+
+var processDBFs=function(queryResults){
+   dbfs=queryResults[0];
+   return(dbfs);
+}
+
+dbf=getDatabases()
+.then(processDBFs)
+.then(function(results){console.log(results)})
+.then(dbf.releaseDBF);
+```
+
+It is a waste to do so little work in `processDBFS`, but I wanted to point out something very important.  Each `.then()` method is returning a Promise, and by putting the `.then()`'s in order we are forcing the callback to be executed in our desired order.  The key thing to notice lives here:
+
+```{js}
+.then(processDBFs)
+.then(function(results){console.log(results)})
+```
+
+Notice that the function `processDBFs` is returning an array of JavaScript objects-- one for each database.  Which function is processing those results?  That would be the anonymous function in the next line: `function(results){console.log(results)}`.
+
+So the `.then()` methods form a chain of promises and these promises induce a chain of callback functions that hand their results off to each-other in the proper order.  This is the **secret** to making it all work out.
 
 ###Now a bit more about promises in general.
 
