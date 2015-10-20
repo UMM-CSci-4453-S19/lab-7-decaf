@@ -446,7 +446,80 @@ It is a waste to do so little work in `processDBFS`, but I wanted to point out s
 
 Notice that the function `processDBFs` is returning an array of JavaScript objects-- one for each database.  Which function is processing those results?  That would be the anonymous function in the next line: `function(results){console.log(results)}`.
 
-So the `.then()` methods form a chain of promises and these promises induce a chain of callback functions that hand their results off to each-other in the proper order.  This is the **secret** to making it all work out.
+So the `.then()` methods form a chain of promises and these promises induce a chain of callback functions that hand their results off to each-other in the proper order.  This is one of the **secrets** to making it all work out.
+
+Another secret is using the `.all()` method (I typically call it using the object attached to the blubird module.  In my case this looks like:  `Promise.all(myArrayOfPromises)`.
+
+For this solution we are going to take advantage of **[prepared statements ](http://www.w3resource.com/node.js/nodejs-mysql.php#prepared-statements)** to make our code even more compact.
+
+Here is my solution involving Promises and prepared statements.  My Promise-Fu is still quite weak, so there are, undoubtedly, ways to do this even more cleanly:
+
+```{js}
+Promise=require('bluebird')
+mysql=require('mysql');
+DBF=require('./dbf-setup.js');
+
+var getDatabases=function(){//Returns a promise that can take a handler ready to process the results
+  var sql = "SHOW DATABASES";
+  return DBF.query(mysql.format(sql)); //Return a promise
+}
+
+var processDBFs=function(queryResults){ //Returns a promise the forces ALL dbfPromises to resolve before .thening()
+   var dbfs=queryResults[0];
+   return(Promise.all(dbfs.map(dbfToPromise)).then(processTables))
+}
+
+var processTables=function(results){ //Returns a promise the forces ALL table description Promises to resolve before .thening()
+  var descriptionPromises=results.map(tableAndDbfToPromise);
+  var allTables=Promise.all(descriptionPromises).then(function(results){return(results)});
+  return(allTables);
+}
+
+//Takes an object (as returned by showDatabases) and returns a promise that resolves 
+// to an array of objects containing table names for the dbf in dbfObj
+var dbfToPromise=function(dbfObj){ 
+  var dbf=dbfObj.Database
+  var sql = mysql.format("SHOW TABLES IN ??",dbf);
+  var queryPromise=DBF.query(sql)
+  queryPromise=queryPromise.then(function(results){return({table:results[0],dbf:dbf})});
+  return(queryPromise);
+}
+
+//Takes an object (as returned by showDatabases) and returns a promise that resolves 
+// to an array of objects containing table descriptions.  
+// This function creates helper functions:
+//     describeTable()
+//  which contains its own helper function printer(), for writing the output to console
+var tableAndDbfToPromise=function(obj){
+   var dbf=obj.dbf;
+   var tableObj=obj.table;
+   var key = "Tables_in_"+dbf;
+
+   var tables=tableObj.map(function(val){return(val[key])})
+
+   var describeTable=function(val,index){
+       var table=dbf+"."+val;
+       var printer=function(results){
+          if(index==0){console.log("---|",dbf,">")};
+          console.log(".....|",table,">\n",results[0]);
+          return(results[0])
+       }
+
+       var describeSQL=mysql.format("DESCRIBE ??",table);
+       var promise=DBF.query(describeSQL).then(printer);
+       return(promise);
+   }
+   var describePromises = tables.map(describeTable);
+   return(Promise.all(describePromises))
+}
+
+var dbf=getDatabases()
+.then(processDBFs)
+.then(DBF.releaseDBF)
+.catch(function(err){console.log("DANGER:",err)});
+```
+
+If people are interested, I'll add more explaining each step in turn:
 
 ###Now a bit more about promises in general.
 
@@ -456,15 +529,11 @@ Here is a short writeup on using promises with node and mySQL (which will work j
 
 <https://medium.com/@alpercitak/node-js-with-mysql-a43c49bbafd3>
 
-For this solution we are also going to create a `connectionPool` so that each interaction has its own connection, and We are also going to take advantage of **[prepared statements ](http://www.w3resource.com/node.js/nodejs-mysql.php#prepared-statements)** to make our code even more compact.
-
-
-**CURRENTLY UPDATING**
-
 <https://lestersy.io/2015/2/22/Callback-Hell,-Async,-and-Promises>
 
 ##Approach 3: Use of async
 
+Most of you used `async` to solve this problem, so I'll leave this slot empty for now.
 
 # angular
 
@@ -491,7 +560,6 @@ Instead of diving head-first into the problem we will start simply and work our 
 
 Start by creating a table called 'users'.  You can pick pretty much whatever structure you would like.  We will be adding complications to it in short order
 
-
 We will start by using a node.js package known as `express.js` to create a very simple web server for our web pages:
 
 ```{js}
@@ -510,7 +578,7 @@ in the 'public' sub-directory, do this tutorial:
 
 At a bare mininum your group should now have
 * The web-server `express.js` in the root directory of your project
-* A subdiretory named `public`
+* A subdirectory named `public`
    * `index.html` (perhaps various files for different sections of the tutorial:  the content)
    * `app.js` (for holding the angular code that orchestrates the data-binding:  the model)
    * `main.ctrl.js` (holds the angular code that orchestrates appearance: the view)
@@ -550,6 +618,7 @@ Since there is no 'buttons' subdirectory in 'public' express applies the next ru
 ##Mixing in a little database
 
 Now we are going to create a table called `till_buttons`.  The purpose of this table is to hold the data necessary to produce buttons that look like this:
+
 ```
 <div style="position:absolute;left:320px;top:100px"><button id="1" >food</button></div>
 ```
@@ -570,6 +639,3 @@ I'll provide the angular code necessary to make the buttons appear on the client
 What you are doing, as you modify the web server is implementing a REST service using node.js.
 
 This 19 minutes video:  <http://www.restapitutorial.com/lessons/whatisrest.html> is a decent introduction to the idea.  There will be some terminology that might be new to you (like SOAP).  You can safely ignore them.  If you look at the contents of `buttons.js` you will notice that I am using the HTTP `get` verb.  
-
-
-
