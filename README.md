@@ -1,7 +1,7 @@
 # Lab 7
 # Asynchronous node
 
-There are at mays ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  I will discuss two
+There are at mays ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  I will discuss two:  Using a data structure for coordination, and using promises:
 
 ## Approach One:  Coordinate using a data structure
 
@@ -123,6 +123,7 @@ function processDescription(desc,table,dbf){
   if(allZero(data)){connection.end()}
 }
 ```
+
 This function does all the printing.  It starts by decreases the table count in `dbf` by 1.  Then it checks to see if the database output line has been produced (that's what we use `processed` for).  If not, then the line is printed, and the fact recorded so that the line is not printed twice.
 
 Regardless it prints the description of a table.  The only thing left is to shut down the connection when every table has had its description printed.  The function `allZero` returns `true` if every value in `data` is 0, otherwise it returns `false`:
@@ -299,7 +300,7 @@ Notice that we are using `.release()` and `pool.end()`.
 
 In our example, this is major over-kill and something of a waste of time since it makes the code harder to read.  However... if we removed the `pool.end()`.  We could wrap most of our active-code in a function and have a comletely self-contained `sql` function.  We would **still** have to deal with the difficulties of asynchronous callbacks... but things would run very quickly indeed.
 
-** Bringing in Promises**
+### Bringing in Promises
 
 Now we're going to add in promises.  There are some new ideas floating around in this next example, so be sure to type up the next example before continuing:
 
@@ -380,7 +381,7 @@ result.then(function(dbfs,err){console.log(dbfs)}).then(function(){pool.end()});
 So, the `query()` function returns a promise that is not completely resolved until the query it contains is executed.
 We use `.then()` to process the results of those queries, and then another `.then()` chained off the back, that closes down the pool of connections.
 
-**Making things a bit cleaner**
+### Making things a bit cleaner
 
 I would like to clean things up a bit to show how much more readable Promises can make our code.
 
@@ -458,7 +459,7 @@ Another secret is using the `.all()` method (I typically call it using the objec
 
 For this solution we are going to take advantage of **[prepared statements ](http://www.w3resource.com/node.js/nodejs-mysql.php#prepared-statements)** to make our code even more compact.
 
-Here is my solution involving Promises and prepared statements.  My Promise-Fu is still quite weak, so there are, undoubtedly, ways to do this even more cleanly:
+Here is my solution involving Promises and prepared statements.  My Promise-Fu is still quite weak, so there are, undoubtedly, ways to do this even more cleanly.  Youl should all type this program in yourselves:
 
 ```{js}
 Promise=require('bluebird')
@@ -528,9 +529,9 @@ var dbf=getDatabases()
 .catch(function(err){console.log("DANGER:",err)});
 ```
 
-If people are interested, I'll add more explaining each step in turn:
+If anything is unclear or you'd like more information please let me know.
 
-### Now a bit more about promises in general.
+### More about promises in general.
 
 Start by reading this:  [Alex Perry's blog entry on promises in node](http://alexperry.io/node/2015/03/25/promises-in-node.html).
 
@@ -559,7 +560,7 @@ Out goal in this lab is produce a web-page that interacts with our database.  Th
    * Statistics for length of transactions
    * Statistics for size of transactions.
 
-# Working our Way up to it
+## Working our Way up to it
 
 Instead of diving head-first into the problem we will start simply and work our way up to something more complicated.
 
@@ -646,3 +647,17 @@ What you are doing, as you modify the web server is implementing a REST service 
 This 19 minutes video:  <http://www.restapitutorial.com/lessons/whatisrest.html> is a decent introduction to the idea.  There will be some terminology that might be new to you (like SOAP).  You can safely ignore them.  If you look at the contents of `buttons.js` you will notice that I am using the HTTP `get` verb.  
 
 # To Do
+
+ - [ ] As individuals make the following files functional programs by **typing** and add them to their group repository:
+    - [ ] `_name_.summarize-db.js` from the functions supplied in [approach one](#approach-one).  You will need to incorporate some other code to make it work
+    - [ ] `_name_.show-databases.js` from [back to databases](#back-to-databases)
+    - [ ] `_name_.dbf-setups.js` from [making things a big cleaner(#making-things-a-bit-cleaner)
+    - [ ] `_name_.dbf-summarize-db-promises.js` from [making things a big cleaner(#making-things-a-bit-cleaner)
+ - [ ] As a group 
+    - [ ] `express.js` in root directory of project/repository
+    - [ ] `public/index.html`
+    - [ ] `public/app.js`
+    - [ ] `public/main.ctrl.js`
+    - [ ] `till_buttons` table
+    - [ ] `till` table
+    - [ ] updated server code
