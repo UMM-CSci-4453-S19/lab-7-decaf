@@ -1,6 +1,7 @@
 # Lab 7
 # Asynchronous node
-There are at least 3 ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  
+
+There are at mays ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  I will discuss two
 
 ## Approach One:  Coordinate using a data structure
 
