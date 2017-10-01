@@ -1,7 +1,9 @@
 # Lab 7
 # Asynchronous node
 There are at least 3 ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  
-##Approach One:  Coordinate using a data structure
+
+## Approach One:  Coordinate using a data structure
+
 Consider the fragment below which should look very similar to `show-databases.js` from the last lab:
 ```{js}
 ... stuff left out ...
@@ -28,7 +30,7 @@ Our logic is particularly simple-- if there is an error, report it and close the
 Let's look at how `processDBFs` works: 
 
 ```{js}
-function processDBFs(dbfs){ // Asyncronous row handler
+function processDBFs(dbfs){ // Asynchronous row handler
      for(var index in dbfs){
        var dbf = dbfs[index].Database;
        var sql = 'SHOW TABLES IN '+dbf;
@@ -48,7 +50,7 @@ function processDBFs(dbfs){ // Asyncronous row handler
 ```
 The variable `dbfs` is an array of objects containing database names.  The outer `for` loop steps through each in turn.  We use the name of the dbf as a key in the global hash `data`.  Eventually `data` will hold a count of the number of tables in that database, but we don't know how many there are yet, so we store a value of `Number.POSITIVE_INFINITY`.   This reserves space in the data-structure.  IF the rest of the program works as expected, the value will change to an actual integer, but if not, then we can detect that there was a problem.
 
-For each database we want to execute a query of the form `SHOW TABLES IN DBF`.  Setting up this query should look similar to what we did when we were running SHOW DATABASES-- we create a callback function to be executed when the quey is complted.  But there is one very, important difference that makes everything work.  Look closely at what is being done:
+For each database we want to execute a query of the form `SHOW TABLES IN DBF`.  Setting up this query should look similar to what we did when we were running SHOW DATABASES-- we create a callback function to be executed when the quey is completed.  But there is one very, important difference that makes everything work.  Look closely at what is being done:
 
 ```{js}
         connection.query(sql, (function(dbf){
@@ -79,7 +81,7 @@ This is important.  The innermost function is defined *inside* the anonymous fun
 In a similar fashion each table can now be processed by a function.  Note the similar **callback construction** approach, and how all the local values are handed off to `processDescription(desc,table,dbf)` for final printing:
 
 ```{js}
-function processTables(tables,dbf){ // Asyncronous row handler
+function processTables(tables,dbf){ // Asynchronous row handler
     data[dbf] = tables.length; // Now it is set.
     processed[dbf] = 0;        // And has not yet been used as a label.
     for(var index in tables){
@@ -112,8 +114,11 @@ function processDescription(desc,table,dbf){
     processed[dbf] = 1
     console.log('---|'+dbf+'>');
   }
-  console.log('.....|'+table+'>');
-  console.log(desc);
+  console.log('.....|'+dbf+'.'+table+'>');
+  desc.map(function(field){ // show the fields nicely
+     console.log("\tFieldName: `"+field.Field+"` \t("+field.Type+")");
+  });
+
   if(allZero(data)){connection.end()}
 }
 ```
@@ -131,11 +136,11 @@ function allZero(object){
 }
 ```
 
-##Approach 2: Using Promises
+## Approach 2: Using Promises
 
 The more I investigate this approach, the more I think it is **the right thing to do**.  So, at the risk of really stretching this material out... let's learn a little bit about honesty and the importance of making promises.  I am basing much of this lecture of Daniel Parker's work in "JavaScript with Promises".  Before getting into the nitty-gritty here's an overview of the JavaScript event loop, as explained by [Philip Robers](https://www.youtube.com/watch?v=8aGhZQkoFbQ) (you will need about half an hour)
 
-###What is a promise
+### What is a promise
 
 A promise is an object meant to act as a placeholder for some value.  In situations involving asynchronous callback functions, a promise-object allows the asynchronous call to return immediately and provides the programmer (you) the opportunity to register *more* callbacks that will be run when the underlying function ends successfully or generates an error.  HTML5 includes a specification for [EcmaScript](https://en.wikipedia.org/wiki/ECMAScript), which is javaScript (mostly) and has native support for promises.  However, we are going to use the `bluebird` library because it is
 
@@ -229,7 +234,7 @@ var promise = new Promise(function(resolve, reject) {
 ```
 
 The `.then()` method expects either a Promise object or a callback function (more on that down below) as an argument.
-###Back to Databases
+### Back to Databases
 
 Let's review our original `showDatabases.js` program:
 
@@ -293,7 +298,7 @@ Notice that we are using `.release()` and `pool.end()`.
 
 In our example, this is major over-kill and something of a waste of time since it makes the code harder to read.  However... if we removed the `pool.end()`.  We could wrap most of our active-code in a function and have a comletely self-contained `sql` function.  We would **still** have to deal with the difficulties of asynchronous callbacks... but things would run very quickly indeed.
 
-**Bringing in Promises**
+** Bringing in Promises**
 
 Now we're going to add in promises.  There are some new ideas floating around in this next example, so be sure to type up the next example before continuing:
 
@@ -427,7 +432,7 @@ var getDatabases=function(){//Returns a promise that can take a handler ready to
 }
 
 var processDBFs=function(queryResults){
-   dbfs=queryResults[0];
+   dbfs=queryResults;
    return(dbfs);
 }
 
@@ -464,12 +469,12 @@ var getDatabases=function(){//Returns a promise that can take a handler ready to
   return DBF.query(mysql.format(sql)); //Return a promise
 }
 
-var processDBFs=function(queryResults){ //Returns a promise the forces ALL dbfPromises to resolve before .thening()
-   var dbfs=queryResults[0];
+var processDBFs=function(queryResults){ //Returns a promise that forces ALL dbfPromises to resolve before .thening()
+   var dbfs=queryResults;
    return(Promise.all(dbfs.map(dbfToPromise)).then(processTables))
 }
 
-var processTables=function(results){ //Returns a promise the forces ALL table description Promises to resolve before .thening()
+var processTables=function(results){ //Returns a promise that forces ALL table description Promises to resolve before .thening()
   var descriptionPromises=results.map(tableAndDbfToPromise);
   var allTables=Promise.all(descriptionPromises).then(function(results){return(results)});
   return(allTables);
@@ -481,7 +486,7 @@ var dbfToPromise=function(dbfObj){
   var dbf=dbfObj.Database
   var sql = mysql.format("SHOW TABLES IN ??",dbf);
   var queryPromise=DBF.query(sql)
-  queryPromise=queryPromise.then(function(results){return({table:results[0],dbf:dbf})});
+  queryPromise=queryPromise.then(function(results){return({table:results,dbf:dbf})});
   return(queryPromise);
 }
 
@@ -500,9 +505,12 @@ var tableAndDbfToPromise=function(obj){
    var describeTable=function(val,index){
        var table=dbf+"."+val;
        var printer=function(results){
+          var desc=results;
           if(index==0){console.log("---|",dbf,">")};
-          console.log(".....|",table,">\n",results[0]);
-          return(results[0])
+          console.log(".....|"+table,">");
+          desc.map(function(field){ // show the fields nicely
+             console.log("\tFieldName: `"+field.Field+"` \t("+field.Type+")");
+          })
        }
 
        var describeSQL=mysql.format("DESCRIBE ??",table);
@@ -521,7 +529,7 @@ var dbf=getDatabases()
 
 If people are interested, I'll add more explaining each step in turn:
 
-###Now a bit more about promises in general.
+### Now a bit more about promises in general.
 
 Start by reading this:  [Alex Perry's blog entry on promises in node](http://alexperry.io/node/2015/03/25/promises-in-node.html).
 
@@ -531,16 +539,12 @@ Here is a short writeup on using promises with node and mySQL (which will work j
 
 <https://lestersy.io/2015/2/22/Callback-Hell,-Async,-and-Promises>
 
-##Approach 3: Use of async
-
-Most of you used `async` to solve this problem, so I'll leave this slot empty for now.
-
 # angular
 
 Out goal in this lab is produce a web-page that interacts with our database.  The webpage will act as our Point of Sales (POS).  We will call it the **till**.  The till needs to be able to do the following:
 
 * Be locked until a user logs in
-   * record the log in and log out time
+   * record the log-in and log-out time
    * Allow logging out
 * Have a collection of buttons for items
    * When an item-button is pushed it (or a collection of items) should appear in a list
@@ -554,7 +558,7 @@ Out goal in this lab is produce a web-page that interacts with our database.  Th
    * Statistics for length of transactions
    * Statistics for size of transactions.
 
-#Working our Way up to it
+# Working our Way up to it
 
 Instead of diving head-first into the problem we will start simply and work our way up to something more complicated.
 
@@ -571,13 +575,13 @@ app.use(express.static(__dirname + '/public'));
 app.listen(port);
 ```
 
-The web-server is expecting out HTML files to be in the 'public" sub directory.
+The web-server is expecting our HTML files to be in the 'public" sub directory.
 
-in the 'public' sub-directory, do this tutorial:
+Using the 'public' sub-directory for your files, do this tutorial:
 <http://www.revillweb.com/tutorials/angularjs-in-30-minutes-angularjs-tutorial/>
 
 At a bare mininum your group should now have
-* The web-server `express.js` in the root directory of your project
+* The web-server `express.js` in the root directory of your repository
 * A subdirectory named `public`
    * `index.html` (perhaps various files for different sections of the tutorial:  the content)
    * `app.js` (for holding the angular code that orchestrates the data-binding:  the model)
@@ -589,13 +593,13 @@ Together these three files exemplify the MVC philosophy:
 * view
 * content
 
-The idea is to seperate differing concerns into differing files.  More information is available on [wiki](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)
+The idea is to separate differing concerns into differing files.  More information is available on [wiki](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)
 
-##Complicating the web server
+## Complicating the web server
 
 Now that you have a reasonable idea of how angular.js allows you to turn your index.html template into a full-fledged web-page, we are going to complicate matters slightly by interacting with the database.
 
-The key idea here is that we are going to add a mechanism allowing our server to act as an intermediary between the web page and the database.  To this end we shall complicate our web server:  **most** of the time it will serve files from the `public` directory (this is where our angular files live), but, if we ask for the proper URL, it will also serve data that allows the cash register or the database to be updated. We could certainly seperate the web-page server from the data-server, however, ports are at a premium in the dungeon, its easier to manage **one** server rather than two, the individual requests are light enough that we don't need to worry about using two servers to improve our performance, and we remove the possibilities of any problematic cross-site scripting security getting in our way.
+The key idea here is that we are going to add a mechanism allowing our server to act as an intermediary between the web page and the database.  To this end we shall complicate our web server:  **most** of the time it will serve files from the `public` directory (this is where our angular files live), but, if we ask for the proper URL, it will also serve data that allows the cash register or the database to be updated. We could certainly saperate the web-page server from the data-server, however, ports are at a premium in the dungeon, its easier to manage **one** server rather than two, the individual requests are light enough that we don't need to worry about using two servers to improve our performance, and we remove the possibilities of any problematic cross-site scripting security getting in our way.
 
 As a first step lets expand our web server to provide files from the 'public' sub-directory, unless the requested URL look like '/buttons', in which case we will politely ask if the reader would like some buttons.
 
@@ -615,7 +619,7 @@ The 'express' package makes things easy.  Your directives are applied in the ord
 
 Since there is no 'buttons' subdirectory in 'public' express applies the next rule.
 
-##Mixing in a little database
+## Mixing in a little database
 
 Now we are going to create a table called `till_buttons`.  The purpose of this table is to hold the data necessary to produce buttons that look like this:
 
@@ -634,8 +638,10 @@ In the example below I've replaced explicit values with expressions of the form 
 I'll provide the angular code necessary to make the buttons appear on the client side in the `first_buttons` subdirectory.  Your job is to
 **Exercise:**  Modify the server code so that `/buttons` will return a JSON object that contains the results of querying your `till_buttons` table.  Note:  You may need to modify the files I provide to match the fields that you chose for your database.
 
-##Adding a little bit of functionality
+## Adding a little bit of functionality
 
 What you are doing, as you modify the web server is implementing a REST service using node.js.
 
 This 19 minutes video:  <http://www.restapitutorial.com/lessons/whatisrest.html> is a decent introduction to the idea.  There will be some terminology that might be new to you (like SOAP).  You can safely ignore them.  If you look at the contents of `buttons.js` you will notice that I am using the HTTP `get` verb.  
+
+# To Do
