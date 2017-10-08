@@ -2,8 +2,8 @@
 
 ## Table of Contents
 - [Asynchronous node](#asynchronous-node)
-  - [Approach One: Coordinate using a data structure](#approach-one-coordinate-using-a-data-structure)
-  - [Approach Two: Using Promises](#approach-two-using-promises)
+  - [Approach 1: Coordinate using a data structure](#approach-1-coordinate-using-a-data-structure)
+  - [Approach 2: Using Promises](#approach-2-using-promises)
     - [What is a promise](#what-is-a-promise)
     - [Back to databases](#back-to-databases)
     - [Bringing in Promises](#bringing-in-promises)
