@@ -2,8 +2,8 @@
 
 ## Table of Contents
 - [Asynchronous node](#asynchronous-node)
-  - [Approach 1: Coordinate using a data structure](#approach-1-coordinate-using-a-data-structure)
-  - [Approach 2: Using Promises](#approach-2-using-promises)
+  - [Approach One: Coordinate using a data structure](#approach-one--coordinate-using-a-data-structure)
+  - [Approach Two: Using Promises](#approach-two--using-promises)
     - [What is a promise](#what-is-a-promise)
     - [Back to databases](#back-to-databases)
     - [Bringing in Promises](#bringing-in-promises)
@@ -157,7 +157,7 @@ function allZero(object){
 }
 ```
 
-## Approach 2: Using Promises
+## Approach Two: Using Promises
 
 The more I investigate this approach, the more I think it is **the right thing to do**.  So, at the risk of really stretching this material out... let's learn a little bit about honesty and the importance of making promises.  I am basing much of this lecture of Daniel Parker's work in "JavaScript with Promises".  Before getting into the nitty-gritty here's an overview of the JavaScript event loop, as explained by [Philip Robers](https://www.youtube.com/watch?v=8aGhZQkoFbQ) (you will need about half an hour)
 
