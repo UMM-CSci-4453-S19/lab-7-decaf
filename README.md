@@ -1,7 +1,26 @@
 # Lab 7
+
+## Table of Contents
+- [Asynchronous node](#asynchronous-node)
+  - [Approach One: Coordinate using a data structure]
+  - [Approach Two: Using Promises]
+    - [What is a promise][what-is-a-promise]
+    - [Back to databases][back-to-databases]
+    - [Bringing in Promises][bringing-in-promises]
+    - [Connection Pools and Promises][connection-pools-and-promises]
+    - [Making things a bit cleaner][making-things-a-bit-cleaner]
+    - [More about promises in general][more-about-promises-in-general]
+- [Angular](#angular)
+  - [Working our way up to it][working-our-way-up-to-it]
+  - [Complicating the web server](#complicating-the-web-server)
+  - [Mixing in a little database](#mixing-in-a-litt-edatabase)
+- [To DO](#to-do)
+
+
 # Asynchronous node
 
-There are at mays ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  I will discuss two:  Using a data structure for coordination, and using promises:
+
+There are at mays ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  I will discuss two:  Using a data structure for coordination and using promises.  Many of you used `async` which is promise-based.  There is another approach involving `generator functions`, but I don't know enough about that yet to provide good advice... so I'll just let you know it exists and if anybody is looking for an interesting project for this class-- that might fit the bill.
 
 ## Approach One:  Coordinate using a data structure
 
@@ -344,7 +363,7 @@ Promise.promisifyAll(require("mysql/lib/Pool").prototype);
 
 The first line is clear:  We are using the promise library known as `bluebird`. The next two lines are a bit mysterious.  We will examine them in more detail later.  The important thing is that these lines *wrap* the original methods from mysql in functions that return Promises.  The function `promisify` converts callback-style APIs to use promises.  You can read up on it [at the bluebird documention](https://github.com/petkaantonov/bluebird/blob/master/API.md#promisification).  The key thing is that a new version of the function is made that now ends with the word `Async`.  Hence the `mysql` method `query` is now called `queryAsync` and returns a promise instead of its results.
 
-**Connection Pools and Promises**
+### Connection Pools and Promises
 
 Things are a bit nicer now:
 ```{js}
@@ -531,7 +550,7 @@ var dbf=getDatabases()
 
 If anything is unclear or you'd like more information please let me know.
 
-### More about promises in general.
+### More about Promises in general
 
 Start by reading this:  [Alex Perry's blog entry on promises in node](http://alexperry.io/node/2015/03/25/promises-in-node.html).
 
@@ -539,14 +558,14 @@ Here is a short writeup on using promises with node and mySQL (which will work j
 
 <https://medium.com/@alpercitak/node-js-with-mysql-a43c49bbafd3>
 
-<https://lestersy.io/2015/2/22/Callback-Hell,-Async,-and-Promises>
+<https://web.archive.org/web/20150924233729/http://lestersy.io:80/2015/2/22/Callback-Hell,-Async,-and-Promises>
 
 # angular
 
-Out goal in this lab is produce a web-page that interacts with our database.  The webpage will act as our Point of Sales (POS).  We will call it the **till**.  The till needs to be able to do the following:
+Out goal in this lab is produce a web-page that interacts with our database.  The webpage will act as our Point of Sales (POS).  We will call it the **till**.  Think about what is necessary for the till to be able to do the following:
 
 * Be locked until a user logs in
-   * record the log-in and log-out time
+   * Record the log-in and log-out time
    * Allow logging out
 * Have a collection of buttons for items
    * When an item-button is pushed it (or a collection of items) should appear in a list
@@ -556,7 +575,7 @@ Out goal in this lab is produce a web-page that interacts with our database.  Th
 * Items in the list should be able to be selected and removed
 * There should be a procedure that appends all the individual tills into a single permanent record and generates end of day statistics
 * There should be a query that determihes
-   * amount of time each employee was logged in
+   * Amount of time each employee was logged in
    * Statistics for length of transactions
    * Statistics for size of transactions.
 
@@ -564,7 +583,7 @@ Out goal in this lab is produce a web-page that interacts with our database.  Th
 
 Instead of diving head-first into the problem we will start simply and work our way up to something more complicated.
 
-Start by creating a table called 'users'.  You can pick pretty much whatever structure you would like.  We will be adding complications to it in short order
+Start by creating a table called 'users'.  You can pick pretty much whatever structure you would like.  We will be adding complications to it in short order.  
 
 We will start by using a node.js package known as `express.js` to create a very simple web server for our web pages:
 
@@ -601,7 +620,7 @@ The idea is to separate differing concerns into differing files.  More informati
 
 Now that you have a reasonable idea of how angular.js allows you to turn your index.html template into a full-fledged web-page, we are going to complicate matters slightly by interacting with the database.
 
-The key idea here is that we are going to add a mechanism allowing our server to act as an intermediary between the web page and the database.  To this end we shall complicate our web server:  **most** of the time it will serve files from the `public` directory (this is where our angular files live), but, if we ask for the proper URL, it will also serve data that allows the cash register or the database to be updated. We could certainly saperate the web-page server from the data-server, however, ports are at a premium in the dungeon, its easier to manage **one** server rather than two, the individual requests are light enough that we don't need to worry about using two servers to improve our performance, and we remove the possibilities of any problematic cross-site scripting security getting in our way.
+The key idea here is that we are going to add a mechanism allowing our server to act as an intermediary between the web page and the database.  To this end we shall complicate our web server:  **most** of the time it will serve files from the `public` directory (this is where our angular files live), but, if we ask for the proper URL, it will also serve data that allows the cash register or the database to be updated. We could certainly separate the web-page server from the data-server, however, ports are at a premium in the dungeon, its easier to manage **one** server rather than two, the individual requests are light enough that we don't need to worry about using two servers to improve our performance, and we remove the possibilities of any problematic cross-site scripting security getting in our way.
 
 As a first step lets expand our web server to provide files from the 'public' sub-directory, unless the requested URL look like '/buttons', in which case we will politely ask if the reader would like some buttons.
 
@@ -635,10 +654,12 @@ In the example below I've replaced explicit values with expressions of the form 
 <div style="position:absolute;left:#LEFT#px;top:#TOP#px"><button id="#BUTTON_ID#" >#LABEL#</button></div>
 ```
 
-**Exercise:**  Create a table that can hold this information.  Feel free to augment the table with a few extra fields to give yourself more control over the size, etc.
+## Exercise
+
+**Create table `till_buttons`:**  Create a table that can hold this information.  Feel free to augment the table with a few extra fields to give yourself more control over the size, etc.
 
 I'll provide the angular code necessary to make the buttons appear on the client side in the `first_buttons` subdirectory.  Your job is to
-**Exercise:**  Modify the server code so that `/buttons` will return a JSON object that contains the results of querying your `till_buttons` table.  Note:  You may need to modify the files I provide to match the fields that you chose for your database.
+**Modify server code:**  Modify the server code so that accessing the URL `localhost:8080/buttons` will return a JSON object that contains the results of querying your `till_buttons` table.  Note:  You may need to modify the files I provide to match the fields that you chose for your database.
 
 ## Adding a little bit of functionality
 
@@ -648,16 +669,20 @@ This 19 minutes video:  <http://www.restapitutorial.com/lessons/whatisrest.html>
 
 # To Do
 
+Be sure to push the appropriate files to your group's repository.
+
  - [ ] As individuals make the following files functional programs by **typing** and add them to their group repository:
     - [ ] `_name_.summarize-db.js` from the functions supplied in [approach one](#approach-one).  You will need to incorporate some other code to make it work
     - [ ] `_name_.show-databases.js` from [back to databases](#back-to-databases)
     - [ ] `_name_.dbf-setups.js` from [making things a big cleaner(#making-things-a-bit-cleaner)
     - [ ] `_name_.dbf-summarize-db-promises.js` from [making things a big cleaner(#making-things-a-bit-cleaner)
  - [ ] As a group 
-    - [ ] `express.js` in root directory of project/repository
-    - [ ] `public/index.html`
-    - [ ] `public/app.js`
-    - [ ] `public/main.ctrl.js`
-    - [ ] `till_buttons` table
-    - [ ] `till` table
-    - [ ] updated server code
+    - [ ] [Angular JS tutorial](http://www.revillweb.com/tutorials/angularjs-in-30-minutes-angularjs-tutorial/)
+      - [ ] `express.js` in root directory of project/repository
+      - [ ] `public/index.html`
+      - [ ] `public/app.js`
+      - [ ] `public/main.ctrl.js`
+    - [ ] Lab 7 Angular Exercise
+      - [ ] `till_buttons` table
+      - [ ] `till` table
+      - [ ] update server code
