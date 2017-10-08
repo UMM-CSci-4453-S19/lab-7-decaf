@@ -2,19 +2,19 @@
 
 ## Table of Contents
 - [Asynchronous node](#asynchronous-node)
-  - [Approach One: Coordinate using a data structure]
-  - [Approach Two: Using Promises]
-    - [What is a promise][what-is-a-promise]
-    - [Back to databases][back-to-databases]
-    - [Bringing in Promises][bringing-in-promises]
-    - [Connection Pools and Promises][connection-pools-and-promises]
-    - [Making things a bit cleaner][making-things-a-bit-cleaner]
-    - [More about promises in general][more-about-promises-in-general]
+  - [Approach One: Coordinate using a data structure](#approach-one-coordinate-using-a-data-structure)
+  - [Approach Two: Using Promises](#approach-two-using-promises)
+    - [What is a promise](#what-is-a-promise)
+    - [Back to databases](#back-to-databases)
+    - [Bringing in Promises](#bringing-in-promises)
+    - [Connection Pools and Promises](#connection-pools-and-promises)
+    - [Making things a bit cleaner](#making-things-a-bit-cleaner)
+    - [More about promises in general](#more-about-promises-in-general)
 - [Angular](#angular)
-  - [Working our way up to it][working-our-way-up-to-it]
+  - [Working our way up to it](#working-our-way-up-to-it)
   - [Complicating the web server](#complicating-the-web-server)
   - [Mixing in a little database](#mixing-in-a-litt-edatabase)
-- [To DO](#to-do)
+- [To Do](#to-do)
 
 
 # Asynchronous node
