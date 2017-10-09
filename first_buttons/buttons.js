@@ -1,7 +1,7 @@
 angular.module('buttons',[]) // use node to run this
   .controller('buttonCtrl',ButtonCtrl)
   .factory('buttonApi',buttonApi)
-  .constant('apiUrl','http://address:port'); // CHANGE for the lab!
+  .constant('apiUrl','http://localhost:1337'); // CHANGED for the lab 2017!
 
 function ButtonCtrl($scope,buttonApi){
    $scope.buttons=[]; // Initially all was still
