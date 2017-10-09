@@ -3,19 +3,19 @@
 ## Table of Contents
 - [Asynchronous node](#asynchronous-node)
   - [Approach One: Coordinate using a data structure](#approach-one--coordinate-using-a-data-structure)
-  - [Approach Two: Using Promises](#approach-two--using-promises)
+  - [Approach Two: Using promises](#approach-two--using-promises)
     - [What is a promise](#what-is-a-promise)
     - [Back to databases](#back-to-databases)
-    - [Bringing in Promises](#bringing-in-promises)
-    - [Connection Pools and Promises](#connection-pools-and-promises)
+    - [Bringing in promises](#bringing-in-promises)
+    - [Connection pools and promises](#connection-pools-and-promises)
     - [Making things a bit cleaner](#making-things-a-bit-cleaner)
     - [More about promises in general](#more-about-promises-in-general)
 - [Angular](#angular)
   - [Working our way up to it](#working-our-way-up-to-it)
   - [Complicating the web server](#complicating-the-web-server)
-  - [Mixing in a little database](#mixing-in-a-litt-edatabase)
+  - [Mixing in a little database](#mixing-in-a-little-database)
+  - [Adding a little bit of functionality](#adding-a-little-bit-of-functionality)
 - [To Do](#to-do)
-
 
 # Asynchronous node
 
@@ -157,7 +157,7 @@ function allZero(object){
 }
 ```
 
-## Approach Two:  Using Promises
+## Approach Two:  Using promises
 
 The more I investigate this approach, the more I think it is **the right thing to do**.  So, at the risk of really stretching this material out... let's learn a little bit about honesty and the importance of making promises.  I am basing much of this lecture of Daniel Parker's work in "JavaScript with Promises".  Before getting into the nitty-gritty here's an overview of the JavaScript event loop, as explained by [Philip Robers](https://www.youtube.com/watch?v=8aGhZQkoFbQ) (you will need about half an hour)
 
@@ -255,7 +255,7 @@ var promise = new Promise(function(resolve, reject) {
 ```
 
 The `.then()` method expects either a Promise object or a callback function (more on that down below) as an argument.
-### Back to Databases
+### Back to databases
 
 Let's review our original `showDatabases.js` program:
 
@@ -319,7 +319,7 @@ Notice that we are using `.release()` and `pool.end()`.
 
 In our example, this is major over-kill and something of a waste of time since it makes the code harder to read.  However... if we removed the `pool.end()`.  We could wrap most of our active-code in a function and have a comletely self-contained `sql` function.  We would **still** have to deal with the difficulties of asynchronous callbacks... but things would run very quickly indeed.
 
-### Bringing in Promises
+### Bringing in promises
 
 Now we're going to add in promises.  There are some new ideas floating around in this next example, so be sure to type up the next example before continuing:
 
@@ -363,7 +363,7 @@ Promise.promisifyAll(require("mysql/lib/Pool").prototype);
 
 The first line is clear:  We are using the promise library known as `bluebird`. The next two lines are a bit mysterious.  We will examine them in more detail later.  The important thing is that these lines *wrap* the original methods from mysql in functions that return Promises.  The function `promisify` converts callback-style APIs to use promises.  You can read up on it [at the bluebird documention](https://github.com/petkaantonov/bluebird/blob/master/API.md#promisification).  The key thing is that a new version of the function is made that now ends with the word `Async`.  Hence the `mysql` method `query` is now called `queryAsync` and returns a promise instead of its results.
 
-### Connection Pools and Promises
+### Connection pools and promises
 
 Things are a bit nicer now:
 ```{js}
@@ -550,7 +550,7 @@ var dbf=getDatabases()
 
 If anything is unclear or you'd like more information please let me know.
 
-### More about Promises in general
+### More about promises in general
 
 Start by reading this:  [Alex Perry's blog entry on promises in node](http://alexperry.io/node/2015/03/25/promises-in-node.html).
 
@@ -579,7 +579,7 @@ Out goal in this lab is produce a web-page that interacts with our database.  Th
    * Statistics for length of transactions
    * Statistics for size of transactions.
 
-## Working our Way up to it
+## Working our way up to it
 
 Instead of diving head-first into the problem we will start simply and work our way up to something more complicated.
 
