@@ -660,9 +660,7 @@ Let's expand our web server so it does two things:
 * Provide files from the 'public' directory
 * Generates a web-page asking the user if they would like some buttons
 
-The default behavior will be to provide files, however if the requested URL look like '/buttons' then we will politely ask the user if they would like *some buttons*.
-
-Later in this lab you will replace the "polite request" with information that is taken from an SQL database.  
+The default behavior will be to provide files, however if the requested URL look like '/buttons' then we will politely ask the user if they would like *some buttons*. 
 
 Here's the basic setup:
 
@@ -684,7 +682,14 @@ Since there is no 'buttons' subdirectory in 'public' express applies the next ru
 
 ## Mixing in a little database
 
-Now we are going to create a table called `till_buttons`.  The purpose of this table is to hold the data necessary to produce buttons that look like this:
+Now we are going to bring everything together.  In the folder `first_buttons` you will find a file named `lab7server.js`.  It should look very similar to your `express.js` file from the last section.  The main difference is that it sends the contents of an array called `buttons`.  Go ahead and run it with `node lab7server.js` and leave it running.
+
+In your browser enter the address `localhost:1337`.  Since you did not specify a file the default file of `index.html` (which is in `first_buttons/public`) is selected.  This is (no surprise) an angular app.  There are a few differences in how I put this together from the earlier portions of the lab:
+
+* Bootstrap is loaded (you can use that later to make things look nice)
+* the angular code is stored in the single file `buttons.js`
+
+Notice that each button in the web page has an HTML code chunk that looks a bit like this:
 
 ```
 <div style="position:absolute;left:320px;top:100px"><button id="1" >food</button></div>
@@ -696,11 +701,12 @@ In the example below I've replaced explicit values with expressions of the form 
 <div style="position:absolute;left:#LEFT#px;top:#TOP#px"><button id="#BUTTON_ID#" >#LABEL#</button></div>
 ```
 
+Your job is to create a table called `till_buttons` that will hold all the data necessary to describe a button-- values like `left`, `top`, `button_id`, and `label`.  Then you will modify `lab7server.js` so that instead of sending the data in the array `buttons`, it will send the properly formatted results of an SQL query:
+
 ## Exercise
 
 **Create table `till_buttons`:**  Create a table that can hold this information.  Feel free to augment the table with a few extra fields to give yourself more control over the size, etc.
 
-I'll provide the angular code necessary to make the buttons appear on the client side in the `first_buttons` subdirectory.  Your job is to
 **Modify server code:**  Modify the server code so that accessing the URL `localhost:1337/buttons` will return a JSON object that contains the results of querying your `till_buttons` table.  Note:  You may need to modify the files I provide to match the fields that you chose for your database.
 
 ## Adding a little bit of functionality
@@ -726,5 +732,4 @@ Be sure to push the appropriate files to your group's repository.
       - [ ] `public/main.ctrl.js`
     - [ ] Lab 7 Angular Exercise
       - [ ] `till_buttons` table
-      - [ ] `till` table
-      - [ ] update server code
+      - [ ] update `lab7server.js` to query `till_buttons`
