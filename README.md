@@ -12,6 +12,7 @@
     - [More about promises in general](#more-about-promises-in-general)
 - [Angular](#angular)
   - [Working our way up to it](#working-our-way-up-to-it)
+  - [An angular tutorial](#an-angular-tutorial)
   - [Complicating the web server](#complicating-the-web-server)
   - [Mixing in a little database](#mixing-in-a-little-database)
   - [Adding a little bit of functionality](#adding-a-little-bit-of-functionality)
@@ -583,9 +584,7 @@ Out goal in this lab is produce a web-page that interacts with our database.  Th
 
 Instead of diving head-first into the problem we will start simply and work our way up to something more complicated.
 
-Start by creating a table called 'users'.  You can pick pretty much whatever structure you would like.  We will be adding complications to it in short order.  
-
-We will start by using a node.js package known as `express.js` to create a very simple web server for our web pages:
+We will start by using a node.js package known as `express.js` to create a very simple web server for our web pages (read a few paragraphs ahead **before** running this):
 
 ```{js}
 var express=require('express'),
@@ -596,9 +595,31 @@ app.use(express.static(__dirname + '/public'));
 app.listen(port);
 ```
 
-The web-server is expecting our HTML files to be in the 'public" sub directory.
+The web-server is expecting our HTML files to be in the `public` sub directory.  Go ahead and 
 
-Using the 'public' sub-directory for your files, do this tutorial:
+* type the code above into a file named app.js 
+* create a `public` subdirectory
+* add a simple `index.html` file in `public`
+
+Now test that all your node packages are installed and working:
+
+```{js}
+node app.js
+```
+
+(typing that command will run your server and start it on port 1337.  It will keep running until you type ctl-C
+
+You should be able to see it in action by starting up a browser and typing 
+
+```{js}
+http://localhost:1337
+```
+
+Please note that if you are working on a lab computer **from home** that `http://localhost:1337` will not work (ask me if you are not clear about why).  Even worse... `http://labcomputer.morris.umn.edu:1337` will probably not work either because of the firewall.  (If you're in the dorms it *might*... I haven't had the time to check... but don't count on it).  
+
+### An angular tutorial
+
+Using the `public` sub-directory that was cloned with your repository, do this tutorial:
 <http://www.revillweb.com/tutorials/angularjs-in-30-minutes-angularjs-tutorial/>
 
 At a bare mininum your group should now have
@@ -659,7 +680,7 @@ In the example below I've replaced explicit values with expressions of the form 
 **Create table `till_buttons`:**  Create a table that can hold this information.  Feel free to augment the table with a few extra fields to give yourself more control over the size, etc.
 
 I'll provide the angular code necessary to make the buttons appear on the client side in the `first_buttons` subdirectory.  Your job is to
-**Modify server code:**  Modify the server code so that accessing the URL `localhost:8080/buttons` will return a JSON object that contains the results of querying your `till_buttons` table.  Note:  You may need to modify the files I provide to match the fields that you chose for your database.
+**Modify server code:**  Modify the server code so that accessing the URL `localhost:1337/buttons` will return a JSON object that contains the results of querying your `till_buttons` table.  Note:  You may need to modify the files I provide to match the fields that you chose for your database.
 
 ## Adding a little bit of functionality
 
