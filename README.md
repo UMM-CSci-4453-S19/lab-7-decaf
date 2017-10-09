@@ -560,7 +560,7 @@ Here is a short writeup on using promises with node and mySQL (which will work j
 
 <https://web.archive.org/web/20150924233729/http://lestersy.io:80/2015/2/22/Callback-Hell,-Async,-and-Promises>
 
-# angular
+# Angular
 
 Out goal in this lab is produce a web-page that interacts with our database.  The webpage will act as our Point of Sales (POS).  We will call it the **till**.  Think about what is necessary for the till to be able to do the following:
 
