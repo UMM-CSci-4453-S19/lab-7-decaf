@@ -620,7 +620,11 @@ Please note that if you are working on a lab computer **from home** that `http:/
 ### An angular tutorial
 
 Using the `public` sub-directory that was cloned with your repository, do this tutorial:
-<http://www.revillweb.com/tutorials/angularjs-in-30-minutes-angularjs-tutorial/>
+<http://www.revillweb.com/tutorials/angularjs-in-30-minutes-angularjs-tutorial/>.
+
+Everything is case-sensitive so pay close attention.  Do not be afraid to open the browser's console to help with debugging.  I also used the **old** version of angularJS that the author used when creating the tutorial.  Just to be clear... here's the line I used `index.html`: 
+
+`<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js" type="text/javascript"></script>`
 
 At a bare mininum your group should now have
 * The web-server `express.js` in the root directory of your repository
@@ -639,11 +643,24 @@ The idea is to separate differing concerns into differing files.  More informati
 
 ## Complicating the web server
 
-Now that you have a reasonable idea of how angular.js allows you to turn your index.html template into a full-fledged web-page, we are going to complicate matters slightly by interacting with the database.
+Now that you have a reasonable idea of how angularJS allows you to turn your index.html template into a full-fledged web-page, we are going to complicate matters slightly by interacting with the database.
 
 The key idea here is that we are going to add a mechanism allowing our server to act as an intermediary between the web page and the database.  To this end we shall complicate our web server:  **most** of the time it will serve files from the `public` directory (this is where our angular files live), but, if we ask for the proper URL, it will also serve data that allows the cash register or the database to be updated. We could certainly separate the web-page server from the data-server, however, ports are at a premium in the dungeon, its easier to manage **one** server rather than two, the individual requests are light enough that we don't need to worry about using two servers to improve our performance, and we remove the possibilities of any problematic cross-site scripting security getting in our way.
 
-As a first step lets expand our web server to provide files from the 'public' sub-directory, unless the requested URL look like '/buttons', in which case we will politely ask if the reader would like some buttons.
+### Making a web API
+
+Hidden underneath every interaction that takes place on the web is a complex exchange of information following a pre-defined set of definitions, formats, and formal expectations known as a **protocol**.  The protocol `HTTP` is the `HyperText Transmission Protocol`.  It's being supplanted by its cryptographic cousin `HTTPS`, but we won't worry too much about that distinction here.  `HTTP` is used to move web-pages from server to client.  Entering a web addresses like `HTTP://personal.morris.umn.edu/~dolan118` into a browser's window initiates a **request**  to the server listening on `personal.morris.umn.edu`.  The **web server** decides how to process that request.  Often it results in the contents of some file being sent from the server to the client.
+
+Your `express.js` program is a very simple web server.  Entering the web address `HTTP://localhost:1337` in your browser results in the file `public/index.html` being transferred from the server (the machine where `node express.js` is running) to the client (the machine running the browser).  It is up to the browser to interpret the file.  Most web pages these days contain references to other web addresses which result in the **browser** making multiple `HTTP` requests.  (Your `index.html` file will generate requests to an external server to load angular and two local requests-- one for `app.js` and one for `maincontroller.js`).
+
+The web server **may** decide it would prefer to do something more interesting than just transferring the contents of a file.  It **may** choose to interpret portions of a web address as arguments that are used to dynamically generate a file (or web page).   This is how Web Application Protocol Interfaces (Web APIs) are born.
+
+Let's expand our web server so it does two things:
+
+* Most of the time it will try to provide files from the 'public' sub-directory, 
+* But if the requested URL look like '/buttons' it will politely ask if the reader would like some buttons.
+
+Later (for this lab) you will replace the "polite request" with information that is taken from an SQL database.  Here's the basic setup:
 
 ```
 var express=require('express'),
