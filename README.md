@@ -21,7 +21,7 @@
 # Asynchronous node
 
 
-There are at mays ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  I will discuss two:  Using a data structure for coordination and using promises.  Many of you used `async` which is promise-based.  There is another approach involving `generator functions`, but I don't know enough about that yet to provide good advice... so I'll just let you know it exists and if anybody is looking for an interesting project for this class-- that might fit the bill.
+There are at many ways to deal with the asynchronous issues arising from the intersection of node and mariaDB.  I will discuss two:  Using a data structure for coordination and using promises.  Many of you used `async` which is promise-based.  There is another approach involving `generator functions`, but I don't know enough about that yet to provide good advice... so I'll just let you know it exists and if anybody is looking for an interesting project for this class-- that might fit the bill.
 
 ## Approach One:  Coordinate using a data structure
 
@@ -44,7 +44,7 @@ connection.query(sql,function(err,rows,fields){ //connection.connect() is run au
 ```
 We will use the global variables `data` and `processed` to coordinate our asynchronous database queries.  Both of these variables are hash tables.
 
-We begin the program similarly to what we did in the lat lab by seting up the connection.  The `connection.query()` method sets up the SQL query and passes the anonymous callback function that will either deal with the results of the query (if successful), or deal with the consequences of a failure (if there is an error).  Notice that the anonymous function has three parameters `err`, `rows`, and `fields` which will be filled with values resulting from the interaction with MariaDB.
+We begin the program similarly to what we did in the last lab by setting up the connection.  The `connection.query()` method sets up the SQL query and passes the anonymous callback function that will either deal with the results of the query (if successful), or deal with the consequences of a failure (if there is an error).  Notice that the anonymous function has three parameters `err`, `rows`, and `fields` which will be filled with values resulting from the interaction with MariaDB.
 
 Our logic is particularly simple-- if there is an error, report it and close the connection.  Otherwise our query has returned an array of objects which we will deal with in the function `processDBFs` (discussed below).
 
