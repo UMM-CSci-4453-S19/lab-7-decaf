@@ -26,6 +26,7 @@ There are at many ways to deal with the asynchronous issues arising from the int
 ## Approach One:  Coordinate using a data structure
 
 Consider the fragment below which should look very similar to `show-databases.js` from the last lab:
+
 ```{js}
 ... stuff left out ...
 var connection = mysql.createConnection(credentials);
@@ -42,6 +43,7 @@ connection.query(sql,function(err,rows,fields){ //connection.connect() is run au
 }
 });
 ```
+
 We will use the global variables `data` and `processed` to coordinate our asynchronous database queries.  Both of these variables are hash tables.
 
 We begin the program similarly to what we did in the last lab by setting up the connection.  The `connection.query()` method sets up the SQL query and passes the anonymous callback function that will either deal with the results of the query (if successful), or deal with the consequences of a failure (if there is an error).  Notice that the anonymous function has three parameters `err`, `rows`, and `fields` which will be filled with values resulting from the interaction with MariaDB.
@@ -69,6 +71,7 @@ function processDBFs(dbfs){ // Asynchronous row handler
     } // do NOT put a connection.end() here.  It will kill all queued queries.
 }
 ```
+
 The variable `dbfs` is an array of objects containing database names.  The outer `for` loop steps through each in turn.  We use the name of the dbf as a key in the global hash `data`.  Eventually `data` will hold a count of the number of tables in that database, but we don't know how many there are yet, so we store a value of `Number.POSITIVE_INFINITY`.   This reserves space in the data-structure.  IF the rest of the program works as expected, the value will change to an actual integer, but if not, then we can detect that there was a problem.
 
 For each database we want to execute a query of the form `SHOW TABLES IN DBF`.  Setting up this query should look similar to what we did when we were running SHOW DATABASES-- we create a callback function to be executed when the quey is completed.  But there is one very, important difference that makes everything work.  Look closely at what is being done:
@@ -82,13 +85,16 @@ For each database we want to execute a query of the form `SHOW TABLES IN DBF`.  
 ```
 
 The callback function is **created** inside `processDBFs`.  This chunk of code:
+
 ```{js}
 (function(dbf){
           return function(err,tables,fields){
             #function body
         })(dbf)
 ```
-Executes an anonymous function that takes `dbf` as an argument and returns a function, namely the interior function:
+
+both defines _and_ executes an anonymous function that takes `dbf` as an argument, and returns yet another function, namely the interior function:
+
 ```{js}
 function(err,tables,fields){
     #function body
@@ -200,6 +206,7 @@ console.log('End of Script');
 ```
 
 The output of this little program should be as follows:
+
 ```
 Inside resolver function
 End of Script
@@ -227,11 +234,13 @@ This function runs immediately (it is a **synchronous** call). And we get our fi
 Because `resolve()` is asynchronous it immediately returns (and it will return a promise object).  The function `resolve()` is now queued up, and will be run AFTER the main thread of execution is completed (because of the "run until completion motto" enjoyed by javaScript and node.js).   Eventually `resolve()` will attempt to resolve anything *hanging off* that original promise.  At this point however, no handlers have been attached to the promise, and there are no additional promises attached to it.  This is the beauty of making `resolve()` asynchronous-- the rest of the program now has time to assign handlers.
 
 So we get to the next chunk in the code:
+
 ```{js}
 promise.then(function(){
   console.log('Inside onFulfilled handler');
 });
 ```
+
 This one assigns a handler to the initial promise using `.then()`.  This is our `onFulfilled handler`.  So... we have assigned a callback (which definitely has not yet been run) which will trigger after our initial Promise is fulfilled.
 
 Because the original `resolve()` function is waiting for the current thread of execution to finish it does not get to run yet... it is still waiting in the stack.
@@ -318,7 +327,7 @@ console.log("All done now.");
 
 Notice that we are using `.release()` and `pool.end()`.
 
-In our example, this is major over-kill and something of a waste of time since it makes the code harder to read.  However... if we removed the `pool.end()`.  We could wrap most of our active-code in a function and have a comletely self-contained `sql` function.  We would **still** have to deal with the difficulties of asynchronous callbacks... but things would run very quickly indeed.
+In our example, this is major over-kill and something of a waste of time since it makes the code harder to read.  However… if we removed the `pool.end()` … we could wrap most of our active-code in a function and have a comletely self-contained `sql` function.  We would **still** have to deal with the difficulties of asynchronous callbacks... but things would run very quickly indeed.
 
 ### Bringing in promises
 
@@ -440,7 +449,7 @@ exports.query = query;
 exports.releaseDBF=endPool;
 ```
 
-We are defining a module.  Node.js allows you to use the `require` function to import information from another file, and the `exports.`*function_name*=*function*The only new material is at the end.  It is how we export functions.  
+We are defining a module.  Node.js allows you to use the `require` function to import information from another file, and the `exports.function_name=function`. The only new material is at the end.  It is how we export functions.  
 
 With that functionality wrapped up in a module the remaining code necessary to implement "SHOW DATABASES" is fairly short.  I have added TWO complications in preparation for the final version of the program however, so read carefully:
 
@@ -475,7 +484,7 @@ Notice that the function `processDBFs` is returning an array of JavaScript objec
 
 So the `.then()` methods form a chain of promises and these promises induce a chain of callback functions that hand their results off to each-other in the proper order.  This is one of the **secrets** to making it all work out.
 
-Another secret is using the `.all()` method (I typically call it using the object attached to the blubird module.  In my case this looks like:  `Promise.all(myArrayOfPromises)`.
+Another secret is using the `.all()` method. I typically call it using the object attached to the blubird module.  In my case this looks like:  `Promise.all(myArrayOfPromises)`.
 
 For this solution we are going to take advantage of **[prepared statements ](http://www.w3resource.com/node.js/nodejs-mysql.php#prepared-statements)** to make our code even more compact.
 
