@@ -27,7 +27,7 @@ There are at many ways to deal with the asynchronous issues arising from the int
 
 Consider the fragment below which should look very similar to `show-databases.js` from the last lab:
 
-```{js}
+```JavaScript
 ... stuff left out ...
 var connection = mysql.createConnection(credentials);
 var data={};
