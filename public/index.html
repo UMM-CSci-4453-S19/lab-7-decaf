@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<head>
+    <title>Learning AngularJS</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js" type="text/javascript"></script>
+    <script src="app.js" type="text/javascript"></script>
+    <script src="main.ctrl.js" type="text/javascript"></script>
+</head>
+<body>
+  <div id='content' ng-app='MyTutorialApp' ng-controller='MainController'>
+    <input type='text' ng-model='searchText' />
+    <ul>
+      <li ng-repeat='person in people | filter:searchText' ng-show='person.live == true'>#{{person.id}} {{person.name}}</li>
+    </ul>
+    <input type='text' ng-model='newPerson' />
+    <button ng-click='addNew()'>Add</button>
+  </div>
+</body>
+</html>
